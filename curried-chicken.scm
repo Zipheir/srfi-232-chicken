@@ -35,7 +35,7 @@
     ((curried formals exp ...)
      (curried-1 formals (begin exp ...)))))
 
-(define-syntax curried1
+(define-syntax curried-1
   (ir-macro-transformer
     (lambda (exp _inject _same?)
       (let ((formals (cadr exp)) (body (caddr exp)))
