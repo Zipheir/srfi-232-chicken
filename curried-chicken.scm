@@ -57,7 +57,7 @@
                 (,formals ,body)
                 (,(append formals 'rest)
                  (apply (f ,@formals) rest))
-                (args `(more-args ,f args)))))
+                (args (more-args f args)))))
            f)))))
 
 (define-syntax rest-args
