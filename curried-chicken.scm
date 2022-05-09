@@ -42,34 +42,27 @@
       (let ((formals (cadr exp)) (body (caddr exp)))
         (cond ((null? formals) body)
               ((symbol? formals) `(lambda ,formals ,body))
-              ((dotted-list? formals) `(rest-args ,formals ,body))
-              ((proper-list? formals) `(one-or-more ,formals ,body))
+              ((dotted-list? formals) (rest-args formals body))
+              ((proper-list? formals) (one-or-more formals body))
               (else
                (syntax-error 'curried "invalid formals" formals)))))))
 
-(define-syntax one-or-more
-  (ir-macro-transformer
-    (lambda (exp _inject _same?)
-      (let ((formals (cadr exp)) (body (caddr exp)))
-        `(letrec
-          ((f (case-lambda
-                (() f)  ; app. to no args -> original function
-                (,formals ,body)
-                (,(append formals 'rest)
-                 (apply (f ,@formals) rest))
-                (args (more-args f args)))))
-           f)))))
+(define (one-or-more formals body)
+  `(letrec
+    ((f (case-lambda
+          (() f)  ; app. to no args -> original function
+          (,formals ,body)
+          (,(append formals 'rest) (apply (f ,@formals) rest))
+          (args (more-args f args)))))
+     f))
 
-(define-syntax rest-args
-  (ir-macro-transformer
-    (lambda (exp _inject _same?)
-      (let ((formals (cadr exp)) (body (caddr exp)))
-        `(letrec
-          ((f (case-lambda
-                (() f)
-                (,formals ,body)
-                (args (more-args f args)))))
-           f)))))
+(define (rest-args formals body)
+  `(letrec
+    ((f (case-lambda
+          (() f)
+          (,formals ,body)
+          (args (more-args f args)))))
+     f))
 
 (define (more-args f current)
   (lambda args (apply f (append current args))))
