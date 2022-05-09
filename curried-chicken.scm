@@ -41,11 +41,25 @@
         (cond ((null? formals) body)
               ((symbol? formals) `(lambda ,formals ,body))
               ((pair? formals)
-               (if (symbol? (cdr formals))
-                   `(rest-args ,formals ,body)  ; dotted tail
+               (if (dotted-tail-list? formals)
+                   `(rest-args ,formals ,body)
                    `(one-or-more ,formals ,body)))
               (else
                (syntax-error 'curried "invalid formals" formals)))))))
+
+(define (dotted-tail-list? xs)
+  (let ((end (last-cdr xs)))
+    (cond ((symbol? end) #t)
+          ((null? end) #f)
+          (else (syntax-error 'curried "invalid formals" xs)))))
+
+(define (last-cdr xs)
+  (if (null? xs)
+      xs
+      (let ((rest (cdr xs)))
+        (if (pair? rest)
+            (last-cdr rest)
+            rest))))
 
 (define-syntax one-or-more
   (ir-macro-transformer
