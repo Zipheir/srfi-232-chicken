@@ -25,12 +25,6 @@
 ;;; needed for CHICKEN, since it doesn't support (v1 v2 ... . vn)
 ;;; patterns in syntax-rules.
 
-(import-for-syntax
-  scheme
-  (only (chicken base) case-lambda)
-  (chicken syntax)
-  (only (srfi 1) proper-list? dotted-list?))
-
 (define-syntax curried
   (syntax-rules ()
     ((curried formals exp ...)
