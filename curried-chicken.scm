@@ -36,7 +36,7 @@
 
 (define-syntax curried1
   (ir-macro-transformer
-    (lambda (exp _inject _same?
+    (lambda (exp _inject _same?)
       (let ((formals (car exp)) (body (cadr exp)))
         (cond ((null? formals) body)
               ((symbol? formals) `(lambda ,formals ,body))
@@ -45,7 +45,7 @@
                    `(rest-args ,formals ,body)  ; dotted tail
                    `(one-or-more ,formals ,body)))
               (else
-               (syntax-error 'curried "invalid formals" formals))))))))
+               (syntax-error 'curried "invalid formals" formals)))))))
 
 (define-syntax one-or-more
   (ir-macro-transformer
