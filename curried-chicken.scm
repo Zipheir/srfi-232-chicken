@@ -37,7 +37,7 @@
 (define-syntax curried1
   (ir-macro-transformer
     (lambda (exp _inject _same?)
-      (let ((formals (car exp)) (body (cadr exp)))
+      (let ((formals (cadr exp)) (body (caddr exp)))
         (cond ((null? formals) body)
               ((symbol? formals) `(lambda ,formals ,body))
               ((pair? formals)
@@ -64,7 +64,7 @@
 (define-syntax one-or-more
   (ir-macro-transformer
     (lambda (exp _inject _same?)
-      (let ((formals (car exp)) (body (cadr exp)))
+      (let ((formals (cadr exp)) (body (caddr exp)))
         `(letrec
           ((f (case-lambda
                 (() f)  ; app. to no args -> original function
@@ -77,7 +77,7 @@
 (define-syntax rest-args
   (ir-macro-transformer
     (lambda (exp _inject _same?)
-      (let ((formals (car exp)) (body (cadr exp)))
+      (let ((formals (cadr exp)) (body (caddr exp)))
         `(letrec
           ((f (case-lambda
                 (() f)
