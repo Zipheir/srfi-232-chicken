@@ -41,7 +41,7 @@
               (else
                (syntax-error 'curried "invalid formals" formals)))))))
 
-(define (one-or-more formals body)
+(define-for-syntax (one-or-more formals body)
   `(letrec
     ((f (case-lambda
           (() f)  ; app. to no args -> original function
@@ -50,7 +50,7 @@
           (args (more-args f args)))))
      f))
 
-(define (rest-args formals body)
+(define-for-syntax (rest-args formals body)
   `(letrec
     ((f (case-lambda
           (() f)
@@ -58,7 +58,7 @@
           (args (more-args f args)))))
      f))
 
-(define (more-args f current)
+(define-for-syntax (more-args f current)
   (lambda args (apply f (append current args))))
 
 (define-syntax define-curried
