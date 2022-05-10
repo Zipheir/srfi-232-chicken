@@ -1,4 +1,6 @@
-(module (srfi 232) (curried define-curried)
+(module (srfi 232)
+    ((syntax: curried curried-1 one-or-more rest-args more-args)
+     define-curried)
   (import scheme
           (only (chicken base) include))
   (import-for-syntax scheme
