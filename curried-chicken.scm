@@ -36,29 +36,26 @@
       (let ((formals (cadr exp)) (body (caddr exp)))
         (cond ((null? formals) body)
               ((symbol? formals) `(lambda ,formals ,body))
-              ((dotted-list? formals) (rest-args formals body))
-              ((proper-list? formals) (one-or-more formals body))
+              ((dotted-list? formals)
+               `(letrec
+                 ((f (case-lambda
+                       (() f)
+                       (,formals ,body)
+                       (args (more-args f args)))))
+                  f))
+              ((proper-list? formals)
+               `(letrec
+                 ((f (case-lambda
+                       (() f)  ; app. to no args -> original function
+                       (,formals ,body)
+                       (,(append formals 'rest)
+                        (apply (f ,@formals) rest))
+                       (args (more-args f args)))))
+                  f))
               (else
                (syntax-error 'curried "invalid formals" formals)))))))
 
-(define-for-syntax (one-or-more formals body)
-  `(letrec
-    ((f (case-lambda
-          (() f)  ; app. to no args -> original function
-          (,formals ,body)
-          (,(append formals 'rest) (apply (f ,@formals) rest))
-          (args (more-args f args)))))
-     f))
-
-(define-for-syntax (rest-args formals body)
-  `(letrec
-    ((f (case-lambda
-          (() f)
-          (,formals ,body)
-          (args (more-args f args)))))
-     f))
-
-(define-for-syntax (more-args f current)
+(define (more-args f current)
   (lambda args (apply f (append current args))))
 
 (define-syntax define-curried
