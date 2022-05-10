@@ -2,10 +2,9 @@
     ((syntax: curried more-args)
      define-curried)
   (import scheme
-          (only (chicken base) include)
-          (chicken syntax))
+          (only (chicken base) include case-lambda)
+          )
   (import-for-syntax scheme
-                     (only (chicken base) case-lambda)
                      (chicken syntax)
                      (only (srfi 1) proper-list? dotted-list?)
                      )
