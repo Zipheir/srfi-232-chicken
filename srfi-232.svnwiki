@@ -43,7 +43,7 @@ bound, the body of the procedure is evaluated.  For example,
 Here, ''foo0'' is applied to two arguments, giving another
 procedure in which ''x'' is bound to {{a}} and ''y'' to {{b}}.
 This is then applied to {{c}}, which gives a value for ''z''.
-All of the original parameters now have a binding, so the body
+All of the original parameters now have bindings, so the body
 of the procedure is evaluated.
 
 {{curried}} procedures can also be applied "all at once":
