@@ -1,29 +1,121 @@
 == SRFI 232: Flexible curried procedures
 
-by Wolfgang Corcoran-Mathe, based on a design by Jason Hemann and Daniel P.
-Friedman.
+This egg provides {{curried}}, a {{lambda}}-like form that creates
+flexible curried procedures.  These procedures can be applied to
+arguments one by one, or all at once.
 
 [[toc:]]
 
+== SRFI description
+
+This page informally documents the forms exported by the egg.  For a full
+description of SRFI 232, see
+[[https://srfi.schemers.org/srfi-232/srfi-232.html|the SRFI document]].
+
+== Author
+
+by Wolfgang Corcoran-Mathe, based on the {{lambda*}} form created by
+Jason Hemann and Daniel P. Friedman.
+
 == Informal specification
 
-(define-curried (⟨variable⟩ ⟨formals⟩) ⟨body⟩)
+<syntax>(curried formals body)</syntax>
 
-Equivalent to
+''formals'' is anything that could appear as
+[[https://wiki.call-cc.org/man/5/Module%20scheme#procedures|the formals argument]]
+of a {{lambda}} expression.  As with {{lambda}}, ''body'' is a sequence
+of one or more expressions.
 
-(define ⟨variable⟩
-  (curried ⟨formals⟩ ⟨body⟩))
+Normally, a {{curried}} evaluates to a procedure which can be
+applied to any number of arguments.  If it is applied to fewer
+parameters than its formals list indicates, then the given
+arguments are bound and a new curried procedure which accepts
+more parameters is returned.  When all parameters have been
+bound, the body of the procedure is evaluated.  For example,
 
-== Examples
+<enscript highlight="scheme">
+(let* ((foo0 (curried (x y z) (list x (list y z))))
+       (foo1 (foo0 'a 'b)))
+  (foo1 'c))
+;; => (a (b c))
+</enscript>
 
-=== Simple currying
+Here, ''foo0'' is applied to two arguments, giving another
+procedure in which ''x'' is bound to {{a}} and ''y'' to {{b}}.
+This is then applied to {{c}}, which gives a value for ''z''.
+All of the original parameters now have a binding, so the body
+of the procedure is evaluated.
+
+{{curried}} procedures can also be applied "all at once":
+
+<enscript highlight="scheme">
+(foo0 'a 'b 'c) ; => (a (b c))
+</enscript>
+
+If a normal {{curried}} procedure is applied to too many parameters
+(i.e. more than appear in its formals list), then the rest are passed
+to the value of the body (which must be a procedure):
+
+<enscript highlight="scheme">
+(let ((bar (curried (a b)
+             (lambda (c d) (+ (* a b) (- c d))))))
+  (bar 2 3 7 5))
+; => 8
+</enscript>
+
+A {{curried}} procedure with a "dotted-tail" formals list will
+bind a list of any excess arguments to the final parameter:
+
+<enscript highlight="scheme">
+(let ((foo (curried (a b . rest)
+             (apply + (* a b) rest))))
+  (list ((foo 2) 3 4)
+        (foo 2 3 4 5)
+        (foo 2 3)))
+;; => (10 15 6)
+</enscript>
+
+The procedure is applied as soon as all of the normal parameters
+have bindings.  So, in the above example, {{(foo 2 3)}} binds
+''rest'' to {{()}}.
+
+There are a few important corner cases.  A {{curried}} procedure
+with an empty formals list evaluates to its body:
+
+<enscript highlight="scheme">
+(curried () 'b) ; => b
+</enscript>
+
+If ''formals'' is a single identifier, then {{curried}} works
+like {{lambda}}:
+
+<enscript highlight="scheme">
+(let ((baz (curried xs (list (car xs) (cdr xs)))))
+  (baz 2 3 4 5))
+; => (2 (3 4 5))
+</enscript>
+
+<syntax>(define-curried (p-name . formals) expr ...)</syntax>
+
+Defines ''p-name'' to be a new curried procedure.  Equivalent to
+
+<enscript highlight="scheme">
+(define ⟨p-name)
+  (curried formals expr ...))
+</enscript>
+
+=== More examples
+
+==== Simple currying
 
 Here, curried is used to create procedures which can be concisely parameterized:
 
+<enscript highlight="scheme">
+(import (only (srfi 1) fold))
 (define-curried (add* x y) (+ x y))
 
 (map (add* 2) '(1 2 3))
- ⇒ (3 4 5)
+; => (3 4 5)
 
 (define-curried (fold* proc base lis)
   (fold proc base lis))
@@ -32,44 +124,60 @@ Here, curried is used to create procedures which can be concisely parameterized:
       (product (fold* * 1))
       (lis '(1 2 3 4 5)))
   (list (sum lis) (product lis)))
- ⇒ (15 120)
+; => (15 120)
+</enscript>
 
-=== Curried polyvariadic procedures
+==== Curried polyvariadic procedures
 
-“Polyvariadic” refers to a procedure denoted by an expression of the form
-(lambda (v₁ … vₙ . vₙ₊₁) ⟨body⟩). A polyvariadic procedure created with curried
-can be partially applied until a procedure of at least one argument remains:
+("Polyvariadic" = "with dotted-tail formals".)
 
+<enscript highlight="scheme">
 (define foo (curried (a b . rest) (list a b rest)))
 
-((foo 1) 2 3 4) ⇒ (1 2 (3 4))
+((foo 1) 2 3 4) ; => (1 2 (3 4))
 
-((foo 'a) 'b) ⇒ (a b ())
+((foo 'a) 'b) ; => (a b ())
+</enscript>
 
-=== Extra arguments
+==== Extra arguments
 
-When a curried procedure is applied to more arguments than it accepts, the
-remaining arguments are passed to the procedure body:
-
+<enscript highlight="scheme">
 ((curried (a)
    (curried (b)
-     (curried (c) (+ a b c)))) 1 2 3) ⇒ 6
+     (curried (c) (+ a b c)))) 1 2 3) ; => 6
+</enscript>
 
-=== Currying with nullary procedures
+==== Currying with nullary procedures
 
 Since nullary curried expressions evaluate to their bodies, application “passes
 through” any number of such expressions:
 
+<enscript highlight="scheme">
 ((curried () (curried (x y) (+ x y))) 2 3)
- ⇒ 5
+;; => 5
 
 (((curried (x)
     (curried ()
       (curried (y z)
         (list x (* y z))))) 4 5) 6)
- ⇒ (4 30)
+;; => (4 30)
+</enscript>
 
 == About this egg
+
+=== Author & maintainer
+
+Wolfgang Corcoran-Mathe
+
+Contact: {{wcm at sigwinch dot xyzzy minus the zy}}
+
+=== Repository
+
+[[https://github.com/Zipheir/srfi-232-chicken/|GitHub]]
+
+=== Version history
+
+; 0.1 : (???) Ported to CHICKEN 5.
 
 === License
 
